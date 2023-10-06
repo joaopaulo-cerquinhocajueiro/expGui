@@ -4,7 +4,7 @@ Programa arduino e interface gráfica para fazer experiências de controle.
 
 A interface gráfica se comunica com o arduino para gerar testes de resposta ao degrau e reposta a sinais PRBS, em sistemas em malha aberta e em malha fachada com controladores PID e compensadores implementados no arduino.
 
-!(sistema.svg)[sistema.svg]
+![sistema.svg](sistema.svg)
 
 ## Arduino
 
@@ -28,6 +28,7 @@ V1        __________
          |
 V0_______|
   0      T1        T2
+![image](https://github.com/joaopaulo-cerquinhocajueiro/expGui/assets/2438973/9209f68f-fe3f-4a85-b9b2-bf655658e477)
 
 Enquanto que o sinal do tipo PRBS é da forma:
 
