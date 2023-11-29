@@ -1,8 +1,8 @@
 import serial
 import time
 
-COM_PORT = '/dev/ttyACM0'
-# COM_PORT = 'COM4'
+# COM_PORT = '/dev/ttyACM0'
+COM_PORT = 'COM3'
 
 ser = serial.Serial(port=COM_PORT,baudrate=115200,timeout=1.0)
 
