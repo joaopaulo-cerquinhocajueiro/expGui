@@ -8,27 +8,32 @@ from matplotlib.figure import Figure
 import serial
 import time
 
+
+ser = "None"
+connected = False
+
 # this is a function which returns the selected combo box item
 def getSelectedComboItem():
 	return comboType.get()
 
+def setConnButton(a):
+	if (comboPort.get() != "None"):
+		connButton.configure(state='active')
+	else:
+		connButton.configure(state='disabled')
 
 # this is a function to get the user input from the text input box
-def getInputBoxValue():
-	userInput = tVzero.get()
-	return userInput
 
+def setVoltages():
+	# Setting voltage levels based on the values of the inputs
+	Vmin = int(tVone.get())
+	Vmax = int(tVtwo.get())
+	Vsp = int(tVzero.get())
+	voltageSetBuffer = b'V' + int(Vmin/256).to_bytes(1,'little') + (Vmin%256).to_bytes(1,'little') + int(Vmax/256).to_bytes(1,'little') + (Vmax%256).to_bytes(1,'little') +int(Vsp/256).to_bytes(1,'little') + (Vsp%256).to_bytes(1,'little') + int(55).to_bytes(1,'little')
+	print("Setting voltages to {}, {} and {}".format(Vmin,Vmax,Vsp))
+	# print(voltageSetBuffer)
+	ser.write(voltageSetBuffer)
 
-# this is a function to get the user input from the text input box
-def getInputBoxValue():
-	userInput = tVone.get()
-	return userInput
-
-
-# this is a function to get the user input from the text input box
-def getInputBoxValue():
-	userInput = tVtwo.get()
-	return userInput
 
 
 # this is a function to get the user input from the text input box
@@ -57,8 +62,9 @@ def getInputBoxValue():
 
 # this is the function called when the button is clicked
 def runExperiment():
-	print('clicked')
-
+	print('Run the experiment')
+	runCommand = b'R7' # 'R' is the command to run the experiment, '7' (55) is the EoP
+	ser.write(runCommand)
 
 
 root = Tk()
@@ -104,18 +110,6 @@ tPmin.place(x=48, y=192)
 Label(root, text='Pmax', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=6, y=216)
 tPmax=Entry(root)
 tPmax.place(x=48, y=216)
-# This is the section of code which creates a text input box
-
-
-# This is the section of code which creates a text input box
-
-# First, we create a canvas to put the picture on
-# worthAThousandWords= Canvas(root, height=480, width=640)
-# # Then, we actually create the image file to use (it has to be a *.gif)
-# picture_file = PhotoImage(file = '')  # <-- you will have to copy-paste the filepath here, for example 'C:\Desktop\pic.gif'
-# # Finally, we create the image on the canvas and then place it onto the main window
-# worthAThousandWords.create_image(480, 0, anchor=NE, image=picture_file)
-# worthAThousandWords.place(x=800-640-12, y=12)
 
 fig = Figure(figsize=(6.4, 4.8), dpi=100)
 ax = fig.add_subplot(111)
@@ -124,8 +118,40 @@ plotCanvas = FigureCanvasTkAgg(fig, master=root)
 plotCanvas.get_tk_widget().place(x=200, y=12)
 plotCanvas.draw()
 
-# This is the section of code which creates a button
-Button(root, text='Run', bg='#EEDFCC', font=('arial', 12, 'normal'), command=runExperiment).place(x=12, y=400)
+# Arduino config
+Label(root, text='Arduino Serial port', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=6, y=248)
+import serial.tools.list_ports
+ports = ["None"]
+for port in serial.tools.list_ports.comports():
+    ports.append(port.name)
+comboPort= ttk.Combobox(root, values=ports, font=('arial', 12, 'normal'), width=10)
+comboPort.place(x=12, y=280)
+comboPort.current(0)
+comboPort.bind("<<ComboboxSelected>>",setConnButton)
+# Connect button
+def connectArduino():
+	global ser,connected
+	if (connected):
+		ser.close()
+		connButton.configure(text="Connect")
+		runButton.configure(state="disabled")
+		connected = False
+	else:
+		ser = serial.Serial(comboPort.get(), 115200)
+		time.sleep(2)  # wait for the serial connection to initialize
+		ser.read_until() # flush the serial port
+		connButton.configure(text="Disconnect")
+		runButton.configure(state="active")
+		connected = True
+
+connButton = Button(root, text='Connect', bg='#EEDFCC', font=('arial', 12, 'normal'), command=connectArduino)
+connButton.place(x=12, y=320)
+connButton.configure(state=DISABLED)
+
+# Run button
+runButton = Button(root, text='Run', bg='#EEDFCC', font=('arial', 12, 'normal'), command=runExperiment)
+runButton.place(x=12, y=400)
+runButton.configure(state="disabled")
 
 
 root.mainloop()
