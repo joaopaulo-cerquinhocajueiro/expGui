@@ -21,11 +21,8 @@ int Tmax = 50;
 
 int expNumber = 0;
 
-int nExp = 100; // número de amostras por experimento
-int n1 = 50; // momento de iniciar o experimento
-
-int vout_buffer[200];
-int vin_buffer[200];
+char vout_buffer[1000];
+int vin;
 
 unsigned long int now, before;
 
@@ -33,7 +30,7 @@ void setup() {
   pinMode(13,OUTPUT);
   // put your setup code here, to run once:
   Serial.begin(SerialRate);
-  Serial.setTimeout(20);
+  Serial.setTimeout(200);
   Serial.readBytesUntil(byte(55),input_buffer,16);
   estado = parado;
   experiment = step;
@@ -48,12 +45,12 @@ void loop() {
     if (Serial.available()){
       // digitalWrite(13,1);
       Serial.readBytesUntil(byte(55),input_buffer,16);
-      //Serial.write(input_buffer[0]);
+      // Serial.println(input_buffer[0]);
       switch(input_buffer[0]){
         case 'r': // Run the experiment
         case 'R':
-          // Serial.println("Rodando7");
-          // delay(100);
+          Serial.println("Rodando7");
+          delay(100);
           setExperiment();
           break;
         case 'v': // set the voltages
@@ -64,7 +61,7 @@ void loop() {
           V1 = int(input_buffer[3]) * 256 + int(input_buffer[4]);
           // V2 is the other value for the PRBS
           V2  = int(input_buffer[5]) * 256 + int(input_buffer[6]);
-          Serial.println("V0, V1, V2");
+          Serial.print("V0, V1, V2:\t");
           Serial.print(V0);
           Serial.print('\t');
           Serial.print(V1);
@@ -76,9 +73,9 @@ void loop() {
           //            ---------------
           // __________/
           // 0         T0             T1
-          T0 = int(input_buffer[1]) * 256 + int(input_buffer[2]);
+              T0 = int(input_buffer[1]) * 256 + int(input_buffer[2]);
               T1 = int(input_buffer[3]) * 256 + int(input_buffer[4]);
-              Serial.println("T0, T1");
+              Serial.print("T0, T1:\t");
               Serial.print(T0);
               Serial.print('\t');
               Serial.println(T1);
@@ -129,21 +126,27 @@ void loop() {
         case step:
         case prbs:
           analogWrite(pin_vout,vout_buffer[expNumber]);
-          vin_buffer[expNumber] = analogRead(pin_vin);
+          vin = analogRead(pin_vin);
           break;
         default: break;
       }
       Serial.print('E');
       Serial.write(byte(vout_buffer[expNumber]));
-      Serial.write(byte(vin_buffer[expNumber]>>8));
-      Serial.write(byte(vin_buffer[expNumber]%256));
+      Serial.write(byte(vin>>8));
+      Serial.write(byte(vin%256));
       Serial.write(55);
       Serial.println();
       before +=Ta;
-      if(++expNumber>nExp){
+      if(++expNumber>T1){
         estado = parado;
       }
     }
+    break;
+  case erro:
+  digitalWrite(13,1);
+  delay(50);
+  digitalWrite(13,0);
+  delay(50);
   }
 }
 
@@ -153,16 +156,16 @@ void setExperiment(){
   // Serial.println("a1");
   switch(experiment){
     case step:
-		for(int i=0;i<n1;i++){
+		for(int i=0;i<T0;i++){
 		  vout_buffer[i] = V0;
 		}
-		for(int i=n1;i<nExp;i++){
+		for(int i=T0;i<T1;i++){
 		  vout_buffer[i] = V2;
 		}
 		break;
     case prbs:
 		int i = 0;
-		for(i=0;i<n1;i++){
+		for(i=0;i<T0;i++){
 		  vout_buffer[i] = V0;
 		}
 		int step = random(0,2);

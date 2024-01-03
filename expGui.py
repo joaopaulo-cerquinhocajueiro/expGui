@@ -13,36 +13,59 @@ import communication
 
 measurementNumber = -1
 measurementArray = []
-currentArray = []
-speedArray = []
+inputArray = []
+outputArray = []
 measureAble = False
 
+ard = None
 
 def setConnButton(a):
+	connected = True
 	if (comboPort.get() != "None"):
 		connButton.configure(state='active')
 	else:
 		connButton.configure(state='disabled')
 
-# this is a function to get the user input from the text input box
+def connectArduino():
+	global ard
+	if ard is None:
+		connButton.configure(text="Disconnect")
+		runButton.configure(state="active")
+		ard = communication.SerialPort(comboPort.get())
+		ard.connect()
+	else:
+		if ard.connected:
+			ard.disconnect()
+			connButton.configure(text="Connect")
+			runButton.configure(state="disabled")
+		else:
+			connButton.configure(text="Disconnect")
+			runButton.configure(state="active")
+			ard = communication.SerialPort(comboPort.get())
+			ard.connect()
+	time.sleep(0.5)
 
-# this is the function called when the button is clicked
-def runExperiment():
+def runExperiment(_ard):
+	ard = _ard
 	print('Run the experiment')
+	# print("the ards are {} and {}".format(ard,_ard))
 	experiment = comboType.get()
-	communication.setVoltages(int(tVone.get()), int(tVtwo.get()), int(tVzero.get()))
-	communication.setTimes(int(tTone.get()), int(tTtwo.get()))
-	communication.getMeasure()
-	communication.run()
+	# ard.setTimes(int(tTone.get()), int(tTtwo.get()))
+	ard.setTimes(1000, 2000)
+	# ard.getMeasure()
+	ard.setVoltages(int(tVone.get()), int(tVtwo.get()), int(tVzero.get()))
+	ard.getMeasure()
+	# time.sleep(0.1)
+	ard.run()
 	ax.clear()  # clear the previous plot
 	ax.plot([],[],'b')
 	ax.plot([],[],'r')
 	# self.ax.axes(xlim=(0,1000),ylim=(0,1024))
 	ax.set_xlabel("Measurement number")
-	ax.set_ylabel("Current [bits] and Speed [Hz]")
+	ax.set_ylabel("Input and Output")
 	print(int(tTtwo.get()))
 	ax.set_xlim([0,int(tTtwo.get())])
-	ax.set_ylim([-500,500])
+	ax.set_ylim([0,1024])
 		
 	measurementNumber = -1
 	measurementArray = []
@@ -149,16 +172,31 @@ plotCanvas.get_tk_widget().place(x=200, y=12)
 plotCanvas.draw()
 
 def figAnimate(i):
-	global measurementNumber
-	figXMax = int(tTtwo.get())
+	global measurementNumber, ard
+	global measurementArray,inputArray, outputArray
 	# print("{}.{}".format(type(measurementNumber),type(figXMax)))
-	if connected and (measurementNumber<figXMax):
-		measurementNumber = measure()
+	if ard is None:
+			measureAble = False
+			ax.clear()
 	else:
-		measureAble = False
-		ax.clear()
-		ax.plot(measurementArray, currentArray, "b")  # create the new plot
-		ax.plot(measurementArray, speedArray, "r")  # create the new plot
+		figXMax = int(tTtwo.get())
+		if ard.connected and (measurementNumber<figXMax):
+			measurementNumber += 1
+			while(ard.ser.in_waiting>0):
+				measurement = ard.getMeasure()
+				if isinstance(measurement, tuple):
+					# print(measurement)
+					if measurement[0] == 'meas':
+						measurementArray.append(measurementNumber)
+						inputArray.append(measurement[1])
+						outputArray.append(measurement[2])
+						# ax.plot(measurementArray, inputArray, "b")  # create the new plot
+						# ax.plot(measurementArray, outputArray, "r")  # create the new plot
+		else:
+			measureAble = False
+			ax.clear()
+		ax.plot(measurementArray, inputArray, "b")  # create the new plot
+		ax.plot(measurementArray, outputArray, "r")  # create the new plot
 
 
 # Arduino config
@@ -172,16 +210,13 @@ comboPort.place(x=12, y=280)
 comboPort.current(0)
 comboPort.bind("<<ComboboxSelected>>",setConnButton)
 # Connect button
-		connButton.configure(text="Disconnect")
-		runButton.configure(state="active")
-		connected = True
 
 connButton = Button(root, text='Connect', bg='#EEDFCC', font=('arial', 12, 'normal'), command=connectArduino)
 connButton.place(x=12, y=320)
 connButton.configure(state=DISABLED)
 
 # Run button
-runButton = Button(root, text='Run', bg='#EEDFCC', font=('arial', 12, 'normal'), command=runExperiment)
+runButton = Button(root, text='Run', bg='#EEDFCC', font=('arial', 12, 'normal'), command=lambda: runExperiment(ard))
 runButton.place(x=12, y=400)
 runButton.configure(state="disabled")
 
