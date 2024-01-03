@@ -29,7 +29,7 @@ class SerialPort:
         # Setting voltage levels based on the values of the inputs
         notCompleted = True
         attempts = 3
-        voltageSetBuffer = b'V' + int(Vmin/256).to_bytes(1,'little') + (Vmin%256).to_bytes(1,'little') + int(Vmax/256).to_bytes(1,'little') + (Vmax%256).to_bytes(1,'little') +int(Vsp/256).to_bytes(1,'little') + (Vsp%256).to_bytes(1,'little') + int(55).to_bytes(1,'little')
+        voltageSetBuffer = b'V' + int(Vsp/256).to_bytes(1,'little') + (Vsp%256).to_bytes(1,'little') + int(Vmin/256).to_bytes(1,'little') + (Vmin%256).to_bytes(1,'little') +int(Vmax/256).to_bytes(1,'little') + (Vmax%256).to_bytes(1,'little') + int(55).to_bytes(1,'little')
         print("Setting voltages to {}, {} and {}".format(Vmin,Vmax,Vsp))
         # print(voltageSetBuffer)
         while notCompleted:

@@ -46,20 +46,25 @@ def connectArduino():
 	time.sleep(0.5)
 
 def runExperiment(_ard):
+	global measurementArray,inputArray,outputArray,measurementNumber
+	ax.clear()  # clear the previous plot
+	ax.plot([],[],'b')
+	ax.plot([],[],'r')
+	measurementNumber = 0
+	measurementArray = []
+	inputArray = []
+	outputArray = []
 	ard = _ard
 	print('Run the experiment')
 	# print("the ards are {} and {}".format(ard,_ard))
 	experiment = comboType.get()
-	# ard.setTimes(int(tTone.get()), int(tTtwo.get()))
-	ard.setTimes(1000, 2000)
+	ard.setTimes(int(tTone.get()), int(tTtwo.get()))
+	# ard.setTimes(1000, 2000)
 	# ard.getMeasure()
-	ard.setVoltages(int(tVone.get()), int(tVtwo.get()), int(tVzero.get()))
+	ard.setVoltages(int(tVzero.get()), int(tVone.get()), int(tVtwo.get()))
 	ard.getMeasure()
 	# time.sleep(0.1)
 	ard.run()
-	ax.clear()  # clear the previous plot
-	ax.plot([],[],'b')
-	ax.plot([],[],'r')
 	# self.ax.axes(xlim=(0,1000),ylim=(0,1024))
 	ax.set_xlabel("Measurement number")
 	ax.set_ylabel("Input and Output")
@@ -146,12 +151,12 @@ tVtwo.place(x=36, y=120)
 # T1
 Label(root, text='T1', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=144)
 tTone=Entry(root)
-tTone.insert(0,str(1000))
+tTone.insert(0,str(100))
 tTone.place(x=36, y=144)
 # T2
 Label(root, text='T2', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=168)
 tTtwo=Entry(root)
-tTtwo.insert(0,str(2000))
+tTtwo.insert(0,str(200))
 tTtwo.place(x=36, y=168)
 # Pmin
 Label(root, text='Pmin', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=6, y=192)
@@ -181,7 +186,6 @@ def figAnimate(i):
 	else:
 		figXMax = int(tTtwo.get())
 		if ard.connected and (measurementNumber<figXMax):
-			measurementNumber += 1
 			while(ard.ser.in_waiting>0):
 				measurement = ard.getMeasure()
 				if isinstance(measurement, tuple):
@@ -190,6 +194,7 @@ def figAnimate(i):
 						measurementArray.append(measurementNumber)
 						inputArray.append(measurement[1])
 						outputArray.append(measurement[2])
+						measurementNumber += 1
 						# ax.plot(measurementArray, inputArray, "b")  # create the new plot
 						# ax.plot(measurementArray, outputArray, "r")  # create the new plot
 		else:
