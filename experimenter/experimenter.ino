@@ -20,8 +20,10 @@ int Tmin = 10;
 int Tmax = 50;
 
 int expNumber = 0;
+int prbsPulseCounter;
+int prbsStep = random(0,2);
 
-char vout_buffer[1000];
+char vout;
 int vin;
 
 unsigned long int now, before;
@@ -86,7 +88,7 @@ void loop() {
           Tmin = int(input_buffer[1]) * 256 + int(input_buffer[2]);
           // Tmax is the maximum length of a PRBS pulse
           Tmax = int(input_buffer[3]) * 256 + int(input_buffer[4]);
-              Serial.println("Tmin, Tmax (PRBS)");
+              Serial.print("Tmin, Tmax (PRBS):\t");
               Serial.print(Tmin);
               Serial.print('\t');
               Serial.println(Tmax);
@@ -96,19 +98,19 @@ void loop() {
           switch(input_buffer[1]){
             case 0:
             experiment = step;
-            Serial.println("Experiment set to Step response");
+            Serial.println("Experiment set to\tStep response");
             break;
             case 1:
               experiment = prbs;
-            Serial.println("Experiment set to PRBS response");
+            Serial.println("Experiment set to\tPRBS response");
             break;
             case 2:
             experiment = step;
-            Serial.println("Experiment set to PID control");
+            Serial.println("Experiment set to\tPID control");
             break;
             case 3:
               experiment = compensator;
-            Serial.println("Experiment set to compensator control");
+            Serial.println("Experiment set to\tcompensator control");
             break;
             default:
             experiment = step;
@@ -124,14 +126,27 @@ void loop() {
     if((now-before)>=Ta){
       switch(experiment){
         case step:
+          vout = expNumber<T0?V0:V1;
+          analogWrite(pin_vout,vout);
+          vin = analogRead(pin_vin);
+          break;
         case prbs:
-          analogWrite(pin_vout,vout_buffer[expNumber]);
+          if(expNumber<T0){
+            vout = V0;
+          } else {
+            if(prbsPulseCounter<=expNumber){
+              prbsPulseCounter = expNumber + random(Tmin,Tmax);
+              prbsStep = !prbsStep;
+            }
+            vout = prbsStep?V1:V2;
+          }
+          analogWrite(pin_vout,vout);
           vin = analogRead(pin_vin);
           break;
         default: break;
       }
       Serial.print('E');
-      Serial.write(byte(vout_buffer[expNumber]));
+      Serial.write(byte(vout));
       Serial.write(byte(vin>>8));
       Serial.write(byte(vin%256));
       Serial.write(55);
@@ -152,36 +167,7 @@ void loop() {
 
 void setExperiment(){
   expNumber = 0;
+  prbsPulseCounter = 0;
   estado = rodando;
-  // Serial.println("a1");
-  switch(experiment){
-    case step:
-		for(int i=0;i<T0;i++){
-		  vout_buffer[i] = V0;
-		}
-		for(int i=T0;i<T1;i++){
-		  vout_buffer[i] = V2;
-		}
-		break;
-    case prbs:
-		int i = 0;
-		for(i=0;i<T0;i++){
-		  vout_buffer[i] = V0;
-		}
-		int step = random(0,2);
-		while (i<T1){
-			i+=random(Tmin,Tmax);
-			i= i>T1?T1:i;
-			for(int j=0;j<i;j++){
-				vout_buffer[j] = step?V1:V2;
-			}
-			step = !step;
-		}
-		break;
-	case pid:
-	case compensator:
-	default:
-		break;
-  }
   before = micros();
 }

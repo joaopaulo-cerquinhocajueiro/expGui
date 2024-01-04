@@ -16,6 +16,7 @@ measurementArray = []
 inputArray = []
 outputArray = []
 measureAble = False
+expTypeNumber = 0;
 
 ard = None
 
@@ -56,11 +57,11 @@ def runExperiment(_ard):
 	outputArray = []
 	ard = _ard
 	print('Run the experiment')
-	# print("the ards are {} and {}".format(ard,_ard))
-	experiment = comboType.get()
+	# experiment = comboType.get()
+	ard.setType(expTypeNumber)
+	if ((expTypeNumber==1)):
+		ard.setPRBSTimes(int(tPmin.get()), int(tPmax.get()))
 	ard.setTimes(int(tTone.get()), int(tTtwo.get()))
-	# ard.setTimes(1000, 2000)
-	# ard.getMeasure()
 	ard.setVoltages(int(tVzero.get()), int(tVone.get()), int(tVtwo.get()))
 	ard.getMeasure()
 	# time.sleep(0.1)
@@ -93,8 +94,10 @@ comboType.place(x=12, y=36)
 comboType.current(0)
 
 def whenExpSelected(a):
+	global expTypeNumber
 	expType = comboType.get()
 	if expType == "Step":
+		expTypeNumber = 0
 		tVzero.configure(state=NORMAL)
 		tVone.configure(state=NORMAL)
 		tVtwo.configure(state=DISABLED)
@@ -103,6 +106,7 @@ def whenExpSelected(a):
 		tPmin.configure(state=DISABLED)
 		tPmax.configure(state=DISABLED)
 	elif expType == 'PRBS':
+		expTypeNumber = 1
 		tVzero.configure(state=NORMAL)
 		tVone.configure(state=NORMAL)
 		tVtwo.configure(state=NORMAL)
@@ -111,6 +115,7 @@ def whenExpSelected(a):
 		tPmin.configure(state=NORMAL)
 		tPmax.configure(state=NORMAL)
 	elif expType == 'PID' or expType == 'Compensador' or expType == 'Step-PID' or expType == 'Step-Compensador' or expType == 'PRBS-PID' or expType == 'PRBS-Compensador':
+		expTypeNumber = 2
 		tVzero.configure(state=DISABLED)
 		tVone.configure(state=DISABLED)
 		tVtwo.configure(state=DISABLED)

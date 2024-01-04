@@ -6,6 +6,7 @@ if len(ports)>0:
     print("Achada a porta {}".format(ports[0].name))
     ard = c.SerialPort(ports[0].name)
     ard.connect()
+    ard.setType(1)
     ard.setVoltages(100,255,0)
     ard.setTimes(500,1000)
     print(ard.getMeasure())

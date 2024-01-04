@@ -25,6 +25,28 @@ class SerialPort:
             self.ser.close()
             self.connected = False
 
+    def setType(self,expType):
+        # Setting voltage levels based on the values of the inputs
+        notCompleted = True
+        attempts = 3
+        typeSetBuffer = b'M' + int(expType).to_bytes(1,'little') + int(55).to_bytes(1,'little')
+        print("Setting experiment to {}".format(['step', 'prbs', 'pid', 'compensator'][expType]))
+        while notCompleted:
+            attempts -= 1
+            self.ser.write(typeSetBuffer)
+            time.sleep(0.01)
+            response = self.getMeasure()
+            if isinstance(response,int):
+                notCompleted = True
+            else:
+                response = response.split(b'\t')
+                if(response[0] == "Experiment set to"):
+                    notCompleted = False
+            if attempts == 0:
+                notCompleted = False
+        print(response)
+        print("Experiment type set")
+
     def setVoltages(self, Vsp, Vmin, Vmax):
         # Setting voltage levels based on the values of the inputs
         notCompleted = True
@@ -71,13 +93,26 @@ class SerialPort:
         print("out of time set")
 
     def setPRBSTimes(self, Tmin, Tmax):
-        prbsTimeSetBuffer = b'P' + int(Tmin/256).to_bytes(1,'little') + (Tmin%256).to_bytes(1,'little') + int(Tmax/256).to_bytes(1,'little') + (Tmax%256).to_bytes(1,'little') + int(55).to_bytes(1,'little')
-        print("Setting minimun amaximun PRBS pulse widths to {} and {}".format(Tmin, Tmax))
-        # print(voltageSetBuffer)
-        self.ser.write(prbsTimeSetBuffer)
-        time.sleep(0.01)
-        while(self.ser.in_waiting>0):
-            print(self.getMeasure())
+        notCompleted = True
+        attempts = 3
+        timeSetBuffer = b'B' + int(Tmin/256).to_bytes(1,'little') + (Tmin%256).to_bytes(1,'little') + int(Tmax/256).to_bytes(1,'little') + (Tmax%256).to_bytes(1,'little') + int(55).to_bytes(1,'little')
+        print("Setting PRBS timings to {} and {}".format(Tmin, Tmax))
+        print(timeSetBuffer)
+        while notCompleted:
+            attempts -= 1
+            self.ser.write(timeSetBuffer)
+            time.sleep(0.01)
+            response = self.getMeasure()
+            if isinstance(response,int):
+                notCompleted = True
+            else:
+                response = response.split(b'\t')
+                if(response[0] == "T0, T1:Tmin, Tmax (PRBS):"):
+                    notCompleted = False
+            if attempts == 0:
+                notCompleted = False
+        print(response)
+        print("out of time set")
 
     def run(self):
         runCommand = b'R7' # 'R' is the command to run the experiment, '7' (55) is the EoP
