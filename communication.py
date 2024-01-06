@@ -1,6 +1,7 @@
 import serial
 import serial.tools.list_ports
 import time
+import struct
 
 def listPorts():
      return serial.tools.list_ports.comports()
@@ -12,7 +13,7 @@ class SerialPort:
         self.ser = None
 
     def connect(self):
-        self.ser = serial.Serial(self.name, 115200,timeout=0.5)
+        self.ser = serial.Serial(self.name, 115200,timeout=0.1)
         time.sleep(1)  # wait for the serial connection to initialize
         self.ser.read_all() # flush the serial port
         time.sleep(0.1)  # wait for the serial connection to initialize
@@ -107,12 +108,34 @@ class SerialPort:
                 notCompleted = True
             else:
                 response = response.split(b'\t')
-                if(response[0] == "T0, T1:Tmin, Tmax (PRBS):"):
+                if(response[0] == "Tmin, Tmax (PRBS):"):
                     notCompleted = False
             if attempts == 0:
                 notCompleted = False
         print(response)
         print("out of time set")
+
+    def setPID(self, Kp, Ki, Kd):
+        notCompleted = True
+        attempts = 3
+        pidSetBuffer = b'Q' + bytearray(struct.pack("f", Kp)) + bytearray(struct.pack("f", Ki))+ bytearray(struct.pack("f", Kd)) + int(55).to_bytes(1,'little')
+        print("Setting PID constants to {}, {} and {}".format(Kp, Ki, Kd))
+        print(pidSetBuffer)
+        while notCompleted:
+            attempts -= 1
+            self.ser.write(pidSetBuffer)
+            time.sleep(0.01)
+            response = self.getMeasure()
+            if isinstance(response,int):
+                notCompleted = True
+            else:
+                response = response.split(b'\t')
+                if(response[0] == "Kp, Ki, Kd:"):
+                    notCompleted = False
+            if attempts == 0:
+                notCompleted = False
+        print(response)
+        print("out of PID set")
 
     def run(self):
         runCommand = b'R7' # 'R' is the command to run the experiment, '7' (55) is the EoP
@@ -131,7 +154,8 @@ class SerialPort:
             if (inputPackage[0] == b'E'[0]) and (inputPackage[-1] == b'7'[0]):
                 vInput = int(inputPackage[1])
                 vOutput = int(inputPackage[2])*256 + int(inputPackage[3])
-                return ('meas',vInput,vOutput)
+                vSp = int(inputPackage[4])*256 + int(inputPackage[5])
+                return ('meas',vInput,vOutput,vSp)
             else:
                 return inputPackage
         else:

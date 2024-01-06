@@ -1,9 +1,17 @@
+#include <PID_v1.h>
+
+// PID variables
+double Setpoint, Input, Output;
+double Kp=1, Ki=0.05, Kd=0.25;
+//Specify the links and initial tuning parameters
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 #define SerialRate 115200
 #define Ta 20000
 
 #define pin_vout 5
 #define pin_vin A0
+#define pin_sp A5
 
 byte input_buffer[16];
 
@@ -24,7 +32,7 @@ int prbsPulseCounter;
 int prbsStep = random(0,2);
 
 char vout;
-int vin;
+int vin,vsp;
 
 unsigned long int now, before;
 
@@ -37,9 +45,12 @@ void setup() {
   estado = parado;
   experiment = step;
   before = micros();
+  myPID.SetMode(MANUAL);
+  myPID.SetSampleTime(20); 
 }
 
 void loop() {
+  myPID.Compute();
   // put your main code here, to run repeatedly:
   switch(estado){
   case parado:
@@ -98,29 +109,59 @@ void loop() {
           switch(input_buffer[1]){
             case 0:
             experiment = step;
+            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tStep response");
             break;
             case 1:
               experiment = prbs;
+            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tPRBS response");
             break;
             case 2:
-            experiment = step;
+            experiment = pid;
+            myPID.SetMode(AUTOMATIC);
             Serial.println("Experiment set to\tPID control");
             break;
             case 3:
               experiment = compensator;
+            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tcompensator control");
             break;
             default:
             experiment = step;
+            myPID.SetMode(MANUAL);
           }
+          break;
+        case 'q': // Set the PID parameters
+        case 'Q':
+          byte * bKp = (byte *) &Kp;
+          bKp[0] = input_buffer[1];
+          bKp[1] = input_buffer[2];
+          bKp[2] = input_buffer[3];
+          bKp[3] = input_buffer[4];
+          byte * bKi = (byte *) &Ki;
+          bKi[0] = input_buffer[5];
+          bKi[1] = input_buffer[6];
+          bKi[2] = input_buffer[7];
+          bKi[3] = input_buffer[8];
+          byte * bKd = (byte *) &Kd;
+          bKd[0] = input_buffer[9];
+          bKd[1] = input_buffer[10];
+          bKd[2] = input_buffer[11];
+          bKd[3] = input_buffer[12];
+              Serial.print("Kp, Ki, Kd:\t");
+              Serial.print(Kp);
+              Serial.print('\t');
+              Serial.print(Ki);
+              Serial.print('\t');
+              Serial.println(Kd);
           break;
         default: break;
       }
     }
     break;
   case rodando:
+    myPID.Compute();
     digitalWrite(13,1);
     now = micros();
     if((now-before)>=Ta){
@@ -143,12 +184,24 @@ void loop() {
           analogWrite(pin_vout,vout);
           vin = analogRead(pin_vin);
           break;
+        case pid:
+        case compensator:
+        vsp = analogRead(pin_sp);
+        Setpoint = (double)vsp;
+        vin = analogRead(pin_vin);
+        Input = (double)vin;
+        //myPID.Compute();
+        vout = (int)Output;
+//        vout = pid(vin,setPoint,Kp,Ki,Kd,vout,intVout);
+        break;
         default: break;
       }
       Serial.print('E');
       Serial.write(byte(vout));
       Serial.write(byte(vin>>8));
       Serial.write(byte(vin%256));
+      Serial.write(byte(vsp>>8));
+      Serial.write(byte(vsp%256));
       Serial.write(55);
       Serial.println();
       before +=Ta;
