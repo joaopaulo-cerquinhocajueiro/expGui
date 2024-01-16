@@ -11,74 +11,106 @@ import time
 
 import communication
 
-measurementNumber = -1
-measurementArray = []
-inputArray = []
-outputArray = []
-measureAble = False
-expTypeNumber = 0;
+# Global variables for the measurement
+measurementNumber = -1 # index
+measurementArray = [] # index array
+inputArray = [] # input array
+outputArray = [] # output array
+spArray = [] # setpoint array
 
-ard = None
+expTypeNumber = 0 # index for the experiment type
+# the experiment type can be:
+# experimentTypes = ['Step', 'PRBS', 'PID', 'Compensador', 'Step-PID', 'Step-Compensador', 'PRBS-PID', 'PRBS-Compensador']
+## so far only the first three are defined
+experimentTypes = ['Step', 'PRBS', 'PID']
+
+ard = None # later will be assigned to an SerialPort object, from communication.py
+#			 can't run an experiment while ard is None
 
 def setConnButton(a):
-	connected = True
-	if (comboPort.get() != "None"):
+	if (comboPort.get() != "None"): # Can connect only if a port is selected
 		connButton.configure(state='active')
 	else:
 		connButton.configure(state='disabled')
 
+# Function to handle the connection with the arduino (or other platform) performing the experiment
 def connectArduino():
 	global ard
-	if ard is None:
+	if ard is None: # if there is no connection yet
+		ard = communication.SerialPort(comboPort.get()) # get the selected port
+		ard.connect() # and connect
+
+		# change the button to disconnect
 		connButton.configure(text="Disconnect")
+		# and enable the runButton 
 		runButton.configure(state="active")
-		ard = communication.SerialPort(comboPort.get())
-		ard.connect()
-	else:
-		if ard.connected:
+
+	else: # If there is a ard object
+		if ard.connected: # and it is already connected
+			# then disconnect
 			ard.disconnect()
+			# change the button to connect
 			connButton.configure(text="Connect")
+			# and disable the runButton
 			runButton.configure(state="disabled")
-		else:
+
+		else: # but if ard is not None but is not connected
+			ard = communication.SerialPort(comboPort.get()) # get the selected port
+			ard.connect() # and connect
+
+			# change the button to disconnect
 			connButton.configure(text="Disconnect")
+			# and enable the runButton 
 			runButton.configure(state="active")
-			ard = communication.SerialPort(comboPort.get())
-			ard.connect()
+	# wait half a second to guarantee the connection and the arduino reset 
 	time.sleep(0.5)
 
+# Execute the experiment
+# The experiment type an all parameters are obtained from the GUI inputs - to change later
 def runExperiment(_ard):
-	global measurementArray,inputArray,outputArray,measurementNumber
+	global measurementArray,inputArray,outputArray,spArray,measurementNumber
+
+	# initialize the plot
 	ax.clear()  # clear the previous plot
 	ax.plot([],[],'b')
 	ax.plot([],[],'r')
+	ax.set_xlabel("Measurement number")
+	if((expTypeNumber==0)or(expTypeNumber==1)):
+		ax.set_ylabel("Input and Output")
+	else:
+		ax.set_ylabel("Input, Output and setPoint")
+		ax.plot([],[],'g')
+	ax.set_xlim([0,int(tTtwo.get())]) # Ttwo defines the number of measurements
+	ax.set_ylim([0,1024])
+	
+	# initialize the measurement variables
 	measurementNumber = 0
 	measurementArray = []
 	inputArray = []
 	outputArray = []
+	spArray = []
 	ard = _ard
-	print('Run the experiment')
-	# experiment = comboType.get()
-	ard.setType(expTypeNumber)
-	if ((expTypeNumber==1)):
-		ard.setPRBSTimes(int(tPmin.get()), int(tPmax.get()))
-	ard.setTimes(int(tTone.get()), int(tTtwo.get()))
-	ard.setVoltages(int(tVzero.get()), int(tVone.get()), int(tVtwo.get()))
-	ard.getMeasure()
-	# time.sleep(0.1)
-	ard.run()
-	# self.ax.axes(xlim=(0,1000),ylim=(0,1024))
-	ax.set_xlabel("Measurement number")
-	ax.set_ylabel("Input and Output")
-	print(int(tTtwo.get()))
-	ax.set_xlim([0,int(tTtwo.get())])
-	ax.set_ylim([0,1024])
-		
-	measurementNumber = -1
-	measurementArray = []
-	currentArray = []
-	speedArray = []
-	measureAble = True
 
+	# Configure the experiment
+	# experiment = comboType.get()
+	ard.setType(expTypeNumber) # expTypeNumber is set when the type is selected
+	
+	if ((expTypeNumber==1)): # if is PRBS
+		# then set the minimum and maximum step times
+		ard.setPRBSTimes(int(tPmin.get()), int(tPmax.get()))
+	# set the times	
+	ard.setTimes(int(tTone.get()), int(tTtwo.get()))
+	if ((expTypeNumber==2)): # if is PID
+		# set the PID constants 
+		ard.setPID(float(tKp.get()),float(tKp.get()),float(tKd.get()))
+	else: # if isn't PID
+		# then set the voltages
+		ard.setVoltages(int(tVzero.get()), int(tVone.get()), int(tVtwo.get()))
+	# get one measurement for sanity - should return 0
+	ard.getMeasure()
+	# and run the experiment
+	ard.run()
+		
 root = Tk()
 
 # This is the section of code which creates the main window
@@ -89,8 +121,7 @@ root.title('Python Experimenter')
 
 # Label and ComboBox for selecting the experiment type
 Label(root, text='Experimento', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=12)
-# experimentTypes = ['Step', 'PRBS', 'PID', 'Compensador', 'Step-PID', 'Step-Compensador', 'PRBS-PID', 'PRBS-Compensador']
-experimentTypes = ['Step', 'PRBS', 'PID']
+
 comboType= ttk.Combobox(root, values=experimentTypes, font=('arial', 12, 'normal'), width=10)
 comboType.place(x=12, y=36)
 comboType.current(0)
@@ -231,10 +262,9 @@ plotCanvas.draw()
 
 def figAnimate(i):
 	global measurementNumber, ard
-	global measurementArray,inputArray, outputArray
+	global measurementArray,inputArray, outputArray, spArray
 	# print("{}.{}".format(type(measurementNumber),type(figXMax)))
 	if ard is None:
-			measureAble = False
 			ax.clear()
 	else:
 		figXMax = int(tTtwo.get())
@@ -247,14 +277,16 @@ def figAnimate(i):
 						measurementArray.append(measurementNumber)
 						inputArray.append(measurement[1])
 						outputArray.append(measurement[2])
+						spArray.append(measurement[3])
 						measurementNumber += 1
 						# ax.plot(measurementArray, inputArray, "b")  # create the new plot
 						# ax.plot(measurementArray, outputArray, "r")  # create the new plot
-		else:
-			measureAble = False
-			ax.clear()
+		# else:
+			# ax.clear()
 		ax.plot(measurementArray, inputArray, "b")  # create the new plot
 		ax.plot(measurementArray, outputArray, "r")  # create the new plot
+		if(expTypeNumber==2):
+			ax.plot(measurementArray, spArray, "g")  # create the new plot
 
 
 # Arduino config
