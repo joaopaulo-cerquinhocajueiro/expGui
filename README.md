@@ -31,7 +31,12 @@ V0_______|
 ![image](https://github.com/joaopaulo-cerquinhocajueiro/expGui/assets/2438973/9209f68f-fe3f-4a85-b9b2-bf655658e477)
 
 Enquanto que o sinal do tipo PRBS é da forma:
-
+```mermaid
+	xychart-beta;
+    x-axis [0, , T1, , , , , , , , , T2];
+    y-axis 0 --> 1024;
+    line [500, 500, 500, 0, 0, 1000, 1000, 1000, 00, 1000, 1000, 000];
+```
 V1       --------  ----   ---
          |      |  |  |   | |
 V0--------      |  |  |   | |
