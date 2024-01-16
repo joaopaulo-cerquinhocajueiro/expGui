@@ -89,7 +89,9 @@ root.title('Python Experimenter')
 
 # Label and ComboBox for selecting the experiment type
 Label(root, text='Experimento', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=12)
-comboType= ttk.Combobox(root, values=['Step', 'PRBS', 'PID', 'Compensador', 'Step-PID', 'Step-Compensador', 'PRBS-PID', 'PRBS-Compensador'], font=('arial', 12, 'normal'), width=10)
+# experimentTypes = ['Step', 'PRBS', 'PID', 'Compensador', 'Step-PID', 'Step-Compensador', 'PRBS-PID', 'PRBS-Compensador']
+experimentTypes = ['Step', 'PRBS', 'PID']
+comboType= ttk.Combobox(root, values=experimentTypes, font=('arial', 12, 'normal'), width=10)
 comboType.place(x=12, y=36)
 comboType.current(0)
 
@@ -105,6 +107,9 @@ def whenExpSelected(a):
 		tTtwo.configure(state=NORMAL)
 		tPmin.configure(state=DISABLED)
 		tPmax.configure(state=DISABLED)
+		tKp.configure(state=DISABLED)
+		tKi.configure(state=DISABLED)
+		tKd.configure(state=DISABLED)	
 	elif expType == 'PRBS':
 		expTypeNumber = 1
 		tVzero.configure(state=NORMAL)
@@ -114,7 +119,22 @@ def whenExpSelected(a):
 		tTtwo.configure(state=NORMAL)
 		tPmin.configure(state=NORMAL)
 		tPmax.configure(state=NORMAL)
-	elif expType == 'PID' or expType == 'Compensador' or expType == 'Step-PID' or expType == 'Step-Compensador' or expType == 'PRBS-PID' or expType == 'PRBS-Compensador':
+		tKp.configure(state=DISABLED)
+		tKi.configure(state=DISABLED)
+		tKd.configure(state=DISABLED)
+	elif expType == 'PID':
+		expTypeNumber = 2
+		tVzero.configure(state=DISABLED)
+		tVone.configure(state=DISABLED)
+		tVtwo.configure(state=DISABLED)
+		tTone.configure(state=DISABLED)
+		tTtwo.configure(state=NORMAL)
+		tPmin.configure(state=DISABLED)
+		tPmax.configure(state=DISABLED)
+		tKp.configure(state=NORMAL)
+		tKi.configure(state=NORMAL)
+		tKd.configure(state=NORMAL)
+	elif expType == 'Compensador' or expType == 'Step-PID' or expType == 'Step-Compensador' or expType == 'PRBS-PID' or expType == 'PRBS-Compensador':
 		expTypeNumber = 2
 		tVzero.configure(state=DISABLED)
 		tVone.configure(state=DISABLED)
@@ -123,7 +143,9 @@ def whenExpSelected(a):
 		tTtwo.configure(state=DISABLED)
 		tPmin.configure(state=DISABLED)
 		tPmax.configure(state=DISABLED)
-
+		tKp.configure(state=DISABLED)
+		tKi.configure(state=DISABLED)
+		tKd.configure(state=DISABLED)
 comboType.bind("<<ComboboxSelected>>",whenExpSelected)
 
 # Inputs for the experiment parameters
@@ -140,39 +162,65 @@ def validateVzero(P):
 		return False
 vcmdVzero = root.register(validateVzero)
 # tVzero = Entry(root, validate = 'key', validatecommand = (vcmdVzero, '%P'))
-tVzero = Entry(root)
+tVzero = Entry(root, width = 6)
 tVzero.insert(0,str(0))
 tVzero.place(x=36, y=72)
+
 # V1
 Label(root, text='V1', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=96)
-tVone=Entry(root)
+tVone=Entry(root, width = 6)
 tVone.insert(0,str(100))
 tVone.place(x=36, y=96)
 # V2
-Label(root, text='V2', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=120)
-tVtwo=Entry(root)
+Label(root, text='V2', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=100, y=96)
+tVtwo=Entry(root, width=6)
 tVtwo.insert(0,str(255))
-tVtwo.place(x=36, y=120)
+tVtwo.place(x=124, y=96)
+tVtwo.configure(state=DISABLED)
+
 # T1
-Label(root, text='T1', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=144)
-tTone=Entry(root)
+Label(root, text='T1', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=120)
+tTone=Entry(root,width=6)
 tTone.insert(0,str(100))
-tTone.place(x=36, y=144)
+tTone.place(x=36, y=120)
 # T2
-Label(root, text='T2', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=168)
-tTtwo=Entry(root)
+Label(root, text='T2', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=100, y=120)
+tTtwo=Entry(root,width=6)
 tTtwo.insert(0,str(200))
-tTtwo.place(x=36, y=168)
+tTtwo.place(x=124, y=120)
+
 # Pmin
-Label(root, text='Pmin', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=6, y=192)
-tPmin=Entry(root)
+Label(root, text='Pmin', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=6, y=144)
+tPmin=Entry(root,width=6)
 tPmin.insert(0,str(10))
-tPmin.place(x=48, y=192)
+tPmin.place(x=48, y=144)
+tPmin.configure(state=DISABLED)
 # Pmax
-Label(root, text='Pmax', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=6, y=216)
-tPmax=Entry(root)
+Label(root, text='Pmax', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=100, y=144)
+tPmax=Entry(root,width=6)
 tPmax.insert(0,str(100))
-tPmax.place(x=48, y=216)
+tPmax.place(x=148, y=144)
+tPmax.configure(state=DISABLED)
+
+# Kp
+Label(root, text='Kp', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=168)
+tKp=Entry(root,width=6)
+tKp.insert(0,str(0.1))
+tKp.place(x=36, y=168)
+tKp.configure(state=DISABLED)
+
+# Ki
+Label(root, text='Ki', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=192)
+tKi=Entry(root,width=6)
+tKi.insert(0,str(0.0))
+tKi.place(x=36, y=192)
+tKi.configure(state=DISABLED)
+# Kd
+Label(root, text='Kd', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=100, y=192)
+tKd=Entry(root,width=6)
+tKd.insert(0,str(0.01))
+tKd.place(x=124, y=192)
+tKd.configure(state=DISABLED)
 
 fig = Figure(figsize=(6.4, 4.8), dpi=100)
 ax = fig.add_subplot(111)
