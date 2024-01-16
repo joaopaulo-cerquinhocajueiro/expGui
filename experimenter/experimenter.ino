@@ -207,6 +207,7 @@ void loop() {
       before +=Ta;
       if(++expNumber>T1){
         estado = parado;
+        analogWrite(pin_vout,0); // return to 0
       }
     }
     break;
