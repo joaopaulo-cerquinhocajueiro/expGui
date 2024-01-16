@@ -23,26 +23,23 @@ Tanto nas variáveis controladas em malha aberta quanto nos setpoints por softwa
 
 O sinal do tipo degrau é da seguinte forma:
 
-V1        __________
-         |
-         |
-V0_______|
-  0      T1        T2
-![image](https://github.com/joaopaulo-cerquinhocajueiro/expGui/assets/2438973/9209f68f-fe3f-4a85-b9b2-bf655658e477)
+```
+// V1        __________
+//          |
+//          |
+// V0_______|
+//   0      T1        T2
+```
 
 Enquanto que o sinal do tipo PRBS é da forma:
-```mermaid
-	xychart-beta;
-    x-axis [0, , T1, , , , , , , , , T2];
-    y-axis 0 --> 1024;
-    line [500, 500, 500, 0, 0, 1000, 1000, 1000, 00, 1000, 1000, 000];
 ```
-V1       --------  ----   ---
-         |      |  |  |   | |
-V0--------      |  |  |   | |
-                |  |  |   | |
-V2              ----  ----- ---
-  0      T1                   T2
+// V1       --------  ----   ---
+//          |      |  |  |   | |
+// V0--------      |  |  |   | |
+//                 |  |  |   | |
+// V2              ----  ----- ---
+//   0      T1                   T2
+```
 
 onde V0, V1 e V2 são ajustáveis (entre 0 e 255 para malha aberta ou 0 e 1023 para malha fechada), assim como T1 e T2.
 
@@ -51,13 +48,20 @@ Os tempos são definidos como valores discretos de número de passos. Por defaul
 O sinal PRBS gera pulsos entre V1 e V2 de comprimento aleatório, entre Tmin e Tmax, também ajustáveis.
 
 ### Pacotes
-Os pacotes são do formato
+A comunicação é do tipo mestre-escravo: o arduino só responde a um comando do computador
+```mermaid
+sequenceDiagram
+    Computador ->> Arduino: Comando
+    Arduino-->>Computador: Resposta
+```
+Os comandos enviados pelo computador são do formato:
 
-________________________
-| type | payload | EOP |
-------------------------
-
-Onde "type" é uma letra que define o tipo do pacote, "payload" é dependente do tipo e "EOP" é o terminador, escolhido como o valor 55 (ascii 7).
+```
+// ________________________
+// | type | payload | EOP |
+// ------------------------
+```
+Onde "type" é uma letra que define o tipo do pacote, "payload" é dependente do tipo, podendo inclusive não ter;  e "EOP" é o terminador, escolhido como o valor 55 (ascii 7).
 
 Os tipos de pacote enviados para o arduino podem ser:
 
@@ -66,11 +70,13 @@ Os tipos de pacote enviados para o arduino podem ser:
 	- 0 - resposta ao degrau em malha aberta
 	- 1 - resposta a PRBS em malha aberta
 	- 2 - controle PID com setpoint por entrada
-	- 3 - controle com compensador com setpoint por entrada
-	- 4 - resposta ao degrau com controle PID
-	- 5 - resposta ao degrau com compensador
-	- 6 - resposta a PRBS com controle PID
-	- 7 - resposta a PRBS com compensador
+	- *3 - controle com compensador com setpoint por entrada*
+	- *4 - resposta ao degrau com controle PID*
+	- *5 - resposta ao degrau com compensador*
+	- *6 - resposta a PRBS com controle PID*
+	- *7 - resposta a PRBS com compensador*
+	
+	(*os em itálico ainda não estão implementados*)
 - V - para definir os valores das variáveis controladas usadas no experimento. O payload são três valores de dois bytes: V0, V1 e V2.
 
 - T - para definir as constantes de tempo do experimento. O payload são dois valores de 2 bytes: T0 e T1. Estes valores são definidos em número de steps (100 steps por segundo por default).
@@ -80,4 +86,6 @@ Os tipos de pacote enviados para o arduino podem ser:
 // 0         T0             T1
 ```
 
-- P - para definir o tempo mínimo e o tempo máximo dos pulsos PRBS. O payload são dois valores de 2 bytes: Tmin e Tmax. Estes valores são definidos em número de steps (100 steps por segundo por default).
+- B - para definir o tempo mínimo e o tempo máximo dos pulsos PRBS. O payload são dois valores de 2 bytes: Tmin e Tmax. Estes valores são definidos em número de steps (100 steps por segundo por default).
+
+- Q - para definir os valores das constantes do PID - Kp, Ki e Kd. Cada valor é enviado como float32 dividido em 4 bytes em little endian.
