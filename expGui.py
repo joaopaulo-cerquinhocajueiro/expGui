@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import * 
+from tkinter import *
+from tkinter.filedialog import asksaveasfilename
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -288,6 +289,13 @@ def figAnimate(i):
 		if(expTypeNumber==2):
 			ax.plot(measurementArray, spArray, "g")  # create the new plot
 
+def saveMeasurement():
+	savefile = asksaveasfilename(filetypes=[('csv file','*.csv'),('text file','*.txt')], defaultextension='.csv')
+	with open(savefile,'w') as f:
+		write = csv.writer(f)
+		write.writerow(['#', 'input', 'output', 'setpoint'])
+		for meas,inp,outp,sp in zip(measurementArray,inputArray,outputArray,spArray):
+			write.writerow([meas,inp, outp, sp])
 
 # Arduino config
 Label(root, text='Arduino Serial port', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=6, y=248)
@@ -309,6 +317,10 @@ connButton.configure(state=DISABLED)
 runButton = Button(root, text='Run', bg='#EEDFCC', font=('arial', 12, 'normal'), command=lambda: runExperiment(ard))
 runButton.place(x=12, y=400)
 runButton.configure(state="disabled")
+
+# Save button
+saveButton = Button(root, text='Save', bg='#EEDFCC', font=('arial', 12, 'normal'), command=saveMeasurement)
+saveButton.place(x=12, y=460)
 
 ani = animation.FuncAnimation(fig,figAnimate, interval=50)
 root.mainloop()

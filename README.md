@@ -79,13 +79,13 @@ Os tipos de pacote enviados para o arduino podem ser:
 	(*os em itálico ainda não estão implementados*)
 - V - para definir os valores das variáveis controladas usadas no experimento. O payload são três valores de dois bytes: V0, V1 e V2.
 
-- T - para definir as constantes de tempo do experimento. O payload são dois valores de 2 bytes: T0 e T1. Estes valores são definidos em número de steps (100 steps por segundo por default).
+- T - para definir as constantes de tempo do experimento. O payload são dois valores de 2 bytes: T0 e T1. Estes valores são definidos em número de steps (50 steps por segundo por default).
 ```
 //            ---------------
 // __________/
 // 0         T0             T1
 ```
 
-- B - para definir o tempo mínimo e o tempo máximo dos pulsos PRBS. O payload são dois valores de 2 bytes: Tmin e Tmax. Estes valores são definidos em número de steps (100 steps por segundo por default).
+- B - para definir o tempo mínimo e o tempo máximo dos pulsos PRBS. O payload são dois valores de 2 bytes: Tmin e Tmax. Estes valores são definidos em número de steps (50 steps por segundo por default).
 
 - Q - para definir os valores das constantes do PID - Kp, Ki e Kd. Cada valor é enviado como float32 dividido em 4 bytes em little endian.
