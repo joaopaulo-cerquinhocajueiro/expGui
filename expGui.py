@@ -75,12 +75,9 @@ def runExperiment(_ard):
 	ax.clear()  # clear the previous plot
 	ax.plot([],[],'b')
 	ax.plot([],[],'r')
+	ax.plot([],[],'g')
 	ax.set_xlabel("Measurement number")
-	if((expTypeNumber==0)or(expTypeNumber==1)):
-		ax.set_ylabel("Input and Output")
-	else:
-		ax.set_ylabel("Input, Output and setPoint")
-		ax.plot([],[],'g')
+	ax.set_ylabel("Input, Output and setPoint")
 	ax.set_xlim([0,int(tTtwo.get())]) # Ttwo defines the number of measurements
 	ax.set_ylim([0,1024])
 	
@@ -286,8 +283,7 @@ def figAnimate(i):
 			# ax.clear()
 		ax.plot(measurementArray, inputArray, "b")  # create the new plot
 		ax.plot(measurementArray, outputArray, "r")  # create the new plot
-		if(expTypeNumber==2):
-			ax.plot(measurementArray, spArray, "g")  # create the new plot
+		ax.plot(measurementArray, spArray, "g")  # create the new plot
 
 def saveMeasurement():
 	savefile = asksaveasfilename(filetypes=[('csv file','*.csv'),('text file','*.txt')], defaultextension='.csv')
