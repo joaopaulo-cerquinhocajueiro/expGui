@@ -1,4 +1,12 @@
 #include <PID_v1.h>
+//#define SERVO_OUTPUT
+
+#ifdef SERVO_OUTPUT
+#include <Servo.h>
+
+// Brushless motor
+Servo brushless;
+#endif
 
 // PID variables
 double Setpoint, Input, Output;
@@ -46,7 +54,15 @@ void setup() {
   experiment = step;
   before = micros();
   myPID.SetMode(MANUAL);
-  myPID.SetSampleTime(20); 
+  myPID.SetSampleTime(20);
+  #ifdef SERVO_OUTPUT
+  // brushless motor controlled by pin_vout through an ESC
+  brushless.attach(pin_out);
+  brushless.write(0); //initialize the signal to 1000
+  #endif
+  #ifndef SERVO_OUTPUT
+  pinMode(pin_out,OUTPUT);
+  #endif
 }
 
 void loop() {
@@ -168,7 +184,12 @@ void loop() {
       switch(experiment){
         case step:
           vout = expNumber<T0?V0:V1;
+          #ifndef SERVO_OUTPUT
           analogWrite(pin_vout,vout);
+          #endif
+          #ifdef SERVO_OUTPUT
+          brushless.write(map(vout,0,255,0,180));
+          #endif
           vin = analogRead(pin_vin);
           break;
         case prbs:
@@ -181,7 +202,12 @@ void loop() {
             }
             vout = prbsStep?V1:V2;
           }
+          #ifndef SERVO_OUTPUT
           analogWrite(pin_vout,vout);
+          #endif
+          #ifdef SERVO_OUTPUT
+          brushless.write(map(vout,0,255,0,180));
+          #endif
           vin = analogRead(pin_vin);
           break;
         case pid:
@@ -193,6 +219,13 @@ void loop() {
         //myPID.Compute();
         vout = (int)Output;
 //        vout = pid(vin,setPoint,Kp,Ki,Kd,vout,intVout);
+        #ifndef SERVO_OUTPUT
+        analogWrite(pin_vout,vout);
+        #endif
+        #ifdef SERVO_OUTPUT
+        brushless.write(map(vout,0,255,0,180));
+        #endif
+
         break;
         default: break;
       }

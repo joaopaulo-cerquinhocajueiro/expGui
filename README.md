@@ -51,8 +51,8 @@ O sinal PRBS gera pulsos com valores entre V1 e V2 e de comprimento aleatório -
 O PID implementa a seguinte malha de controle:
 ```mermaid
 flowchart LR
-	vin --> sum((+-)) --erro--> PID --> vout --> s[sistema]
-	s --> vsp --> sum
+	vsp & vin --> sum((+-)) --erro--> PID --> vout --> s[sistema]
+	s --> vin
 ```
 Neste diagrama, o bloco PID implementa a seguinte operação:
 $$
