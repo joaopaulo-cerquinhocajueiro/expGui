@@ -291,7 +291,7 @@ def figAnimate(i):
 
 def saveMeasurement():
 	savefile = asksaveasfilename(filetypes=[('csv file','*.csv'),('text file','*.txt')], defaultextension='.csv')
-	with open(savefile,'w') as f:
+	with open(savefile,'w',newline="") as f:
 		write = csv.writer(f)
 		write.writerow(['#', 'input', 'output', 'setpoint'])
 		for meas,inp,outp,sp in zip(measurementArray,inputArray,outputArray,spArray):
