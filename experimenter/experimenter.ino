@@ -39,8 +39,40 @@ double PIDCompute(){
   return PIDOut;
 }
 
+///////// Lead Lag variables and computation ///////
+
+// Using implementation described in (Krikelis, Fassois, 1984)
+// y[n] = (T2/(T2 + Ta))*y[n-1] + (Kp*(T1 + Ta)/(T2 + Ta))*e[n] - (Kp*T1/(T2+Ta))*e[n-1]
+
+// Many variables already defined for PID
+// #define outMax 255.0
+// #define outMin 0.0
+// double Setpoint, Input, Output;
+//double Kp=1.0, Ki=0.05, Kd=0.25;
+double yAnt = 0.0; // y[n-1]
+double eAnt = 0.0; // e[n-1]
+double fT1;
+double fT2;
+double kyAnt; // (T2/(T2 + Ta))
+double ke;    // (Kp*(T1 + Ta)/(T2 + Ta))
+double keAnt; // (Kp*T1/(T2+Ta))
+
+double leadLagCompute(){
+  double error = Setpoint - Input;
+  double leadLag = kyAnt*yAnt + ke*error - keAnt*eAnt;
+  if(leadLag > outMax)
+    leadLag = outMax;
+  else if(leadLag < outMin)
+    leadLag = outMin;
+  yAnt = leadLag;
+  eAnt = error;
+  return leadLag;
+}
+
+
 #define SerialRate 115200
 #define Ta 20000
+float fTa = float(Ta);
 
 #define pin_vout 5
 #define pin_vin A0
@@ -182,12 +214,42 @@ void loop() {
           bKd[1] = input_buffer[10];
           bKd[2] = input_buffer[11];
           bKd[3] = input_buffer[12];
-              Serial.print("Kp, Ki, Kd:\t");
+          Serial.print("Kp, Ki, Kd:\t");
+          Serial.print(Kp);
+          Serial.print('\t');
+          Serial.print(Ki);
+          Serial.print('\t');
+          Serial.println(Kd);
+          break;
+        case 'l': // Set the lead/lag parameters
+        case 'L':
+          byte * bKll = (byte *) &Kp;
+          bKll[0] = input_buffer[1];
+          bKll[1] = input_buffer[2];
+          bKll[2] = input_buffer[3];
+          bKll[3] = input_buffer[4];
+          byte * bT1 = (byte *) &fT1;
+          bT1[0] = input_buffer[5];
+          bT1[1] = input_buffer[6];
+          bT1[2] = input_buffer[7];
+          bT1[3] = input_buffer[8];
+          byte * bT2 = (byte *) &fT2;
+          bT2[0] = input_buffer[9];
+          bT2[1] = input_buffer[10];
+          bT2[2] = input_buffer[11];
+          bT2[3] = input_buffer[12];
+          // Adjust the leadLag specific constants
+          // float fTa = float(Ta);
+          kyAnt = (fT2/(fT2 + fTa));
+          ke = (Kp*(fT1 + fTa)/(fT2 + fTa));
+          keAnt = (Kp*fT1/(fT2+fTa));
+
+              Serial.print("Kp, T1, T2:\t");
               Serial.print(Kp);
               Serial.print('\t');
-              Serial.print(Ki);
+              Serial.print(fT1);
               Serial.print('\t');
-              Serial.println(Kd);
+              Serial.println(fT2);
           break;
         default: break;
       }
@@ -245,7 +307,7 @@ void loop() {
           Setpoint = (double)vsp;
           vin = analogRead(pin_vin);
           Input = (double)vin;
-          Output = PIDCompute();
+          Output = leadLagCompute();
           vout = (int)Output;
           #ifndef SERVO_OUTPUT
           analogWrite(pin_vout,vout);
