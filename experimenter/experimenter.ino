@@ -1,4 +1,3 @@
-#include <PID_v1.h>
 //#define SERVO_OUTPUT
 
 #ifdef SERVO_OUTPUT
@@ -9,10 +8,36 @@ Servo brushless;
 #endif
 
 // PID variables
+#define outMax 255.0
+#define outMin 0.0
 double Setpoint, Input, Output;
-double Kp=1, Ki=0.05, Kd=0.25;
-//Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+double Kp=1.0, Ki=0.05, Kd=0.25;
+double Integral = 0.0;
+double lastInput = 0.0;
+
+double PIDCompute(){
+  double error = Setpoint - Input;
+
+  double proportional = Kp * error;
+  
+  Integral += Ki*error;
+  if(Integral > outMax)
+    Integral = outMax;
+  else if(Integral < outMin)
+    Integral = outMin;
+
+  double derivativo = Kd*(Input - lastInput);
+
+  double PIDOut = proportional + Integral + derivativo;
+  if(PIDOut > outMax)
+    PIDOut = outMax;
+  else if(PIDOut < outMin)
+    PIDOut = outMin;
+
+  lastInput = Input;
+
+  return PIDOut;
+}
 
 #define SerialRate 115200
 #define Ta 20000
@@ -53,20 +78,17 @@ void setup() {
   estado = parado;
   experiment = step;
   before = micros();
-  myPID.SetMode(MANUAL);
-  myPID.SetSampleTime(20);
   #ifdef SERVO_OUTPUT
   // brushless motor controlled by pin_vout through an ESC
   brushless.attach(pin_out);
   brushless.write(0); //initialize the signal to 1000
   #endif
   #ifndef SERVO_OUTPUT
-  pinMode(pin_out,OUTPUT);
+  pinMode(pin_vout,OUTPUT);
   #endif
 }
 
 void loop() {
-  myPID.Compute();
   // put your main code here, to run repeatedly:
   switch(estado){
   case parado:
@@ -125,27 +147,22 @@ void loop() {
           switch(input_buffer[1]){
             case 0:
             experiment = step;
-            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tStep response");
             break;
             case 1:
               experiment = prbs;
-            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tPRBS response");
             break;
             case 2:
             experiment = pid;
-            myPID.SetMode(AUTOMATIC);
             Serial.println("Experiment set to\tPID control");
             break;
             case 3:
               experiment = compensator;
-            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tcompensator control");
             break;
             default:
             experiment = step;
-            myPID.SetMode(MANUAL);
           }
           break;
         case 'q': // Set the PID parameters
@@ -177,7 +194,6 @@ void loop() {
     }
     break;
   case rodando:
-    myPID.Compute();
     digitalWrite(13,1);
     now = micros();
     if((now-before)>=Ta){
@@ -211,22 +227,33 @@ void loop() {
           vin = analogRead(pin_vin);
           break;
         case pid:
+          vsp = analogRead(pin_sp);
+          Setpoint = (double)vsp;
+          vin = analogRead(pin_vin);
+          Input = (double)vin;
+          Output = PIDCompute();
+          vout = (int)Output;
+          #ifndef SERVO_OUTPUT
+          analogWrite(pin_vout,vout);
+          #endif
+          #ifdef SERVO_OUTPUT
+          brushless.write(map(vout,0,255,0,180));
+          #endif
+          break;
         case compensator:
-        vsp = analogRead(pin_sp);
-        Setpoint = (double)vsp;
-        vin = analogRead(pin_vin);
-        Input = (double)vin;
-        //myPID.Compute();
-        vout = (int)Output;
-//        vout = pid(vin,setPoint,Kp,Ki,Kd,vout,intVout);
-        #ifndef SERVO_OUTPUT
-        analogWrite(pin_vout,vout);
-        #endif
-        #ifdef SERVO_OUTPUT
-        brushless.write(map(vout,0,255,0,180));
-        #endif
-
-        break;
+          vsp = analogRead(pin_sp);
+          Setpoint = (double)vsp;
+          vin = analogRead(pin_vin);
+          Input = (double)vin;
+          Output = PIDCompute();
+          vout = (int)Output;
+          #ifndef SERVO_OUTPUT
+          analogWrite(pin_vout,vout);
+          #endif
+          #ifdef SERVO_OUTPUT
+          brushless.write(map(vout,0,255,0,180));
+          #endif
+          break;
         default: break;
       }
       Serial.print('E');
@@ -258,3 +285,4 @@ void setExperiment(){
   estado = rodando;
   before = micros();
 }
+// AMDG
