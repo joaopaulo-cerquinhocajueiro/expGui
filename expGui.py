@@ -23,7 +23,7 @@ expTypeNumber = 0 # index for the experiment type
 # the experiment type can be:
 # experimentTypes = ['Step', 'PRBS', 'PID', 'Compensador', 'Step-PID', 'Step-Compensador', 'PRBS-PID', 'PRBS-Compensador']
 ## so far only the first three are defined
-experimentTypes = ['Step', 'PRBS', 'PID']
+experimentTypes = ['Step', 'PRBS', 'PID', 'Compensador']
 
 ard = None # later will be assigned to an SerialPort object, from communication.py
 #			 can't run an experiment while ard is None
@@ -101,12 +101,15 @@ def runExperiment(_ard):
 	if ((expTypeNumber==2)): # if is PID
 		# set the PID constants 
 		ard.setPID(float(tKp.get()),float(tKp.get()),float(tKd.get()))
-	else: # if isn't PID
+	elif ((expTypeNumber==3)): # if is compensator:
+		ard.setLeadLag(float(tKp.get()),float(tTc1.get()),float(tTc2.get()))
+	else: # if isn't PID nor lead lag compensator
 		# then set the voltages
 		ard.setVoltages(int(tVzero.get()), int(tVone.get()), int(tVtwo.get()))
 	# get one measurement for sanity - should return 0
 	ard.getMeasure()
 	# and run the experiment
+
 	ard.run()
 		
 root = Tk()
@@ -138,7 +141,9 @@ def whenExpSelected(a):
 		tPmax.configure(state=DISABLED)
 		tKp.configure(state=DISABLED)
 		tKi.configure(state=DISABLED)
-		tKd.configure(state=DISABLED)	
+		tKd.configure(state=DISABLED)
+		tTc1.configure(state=DISABLED)	
+		tTc2.configure(state=DISABLED)	
 	elif expType == 'PRBS':
 		expTypeNumber = 1
 		tVzero.configure(state=NORMAL)
@@ -151,6 +156,8 @@ def whenExpSelected(a):
 		tKp.configure(state=DISABLED)
 		tKi.configure(state=DISABLED)
 		tKd.configure(state=DISABLED)
+		tTc1.configure(state=DISABLED)	
+		tTc2.configure(state=DISABLED)	
 	elif expType == 'PID':
 		expTypeNumber = 2
 		tVzero.configure(state=DISABLED)
@@ -163,7 +170,23 @@ def whenExpSelected(a):
 		tKp.configure(state=NORMAL)
 		tKi.configure(state=NORMAL)
 		tKd.configure(state=NORMAL)
-	elif expType == 'Compensador' or expType == 'Step-PID' or expType == 'Step-Compensador' or expType == 'PRBS-PID' or expType == 'PRBS-Compensador':
+		tTc1.configure(state=DISABLED)	
+		tTc2.configure(state=DISABLED)	
+	elif expType == 'Compensador':
+		expTypeNumber = 2
+		tVzero.configure(state=DISABLED)
+		tVone.configure(state=DISABLED)
+		tVtwo.configure(state=DISABLED)
+		tTone.configure(state=DISABLED)
+		tTtwo.configure(state=NORMAL)
+		tPmin.configure(state=DISABLED)
+		tPmax.configure(state=DISABLED)
+		tKp.configure(state=NORMAL)
+		tKi.configure(state=DISABLED)
+		tKd.configure(state=DISABLED)
+		tTc1.configure(state=NORMAL)	
+		tTc2.configure(state=NORMAL)	
+	elif expType == 'Step-PID' or expType == 'Step-Compensador' or expType == 'PRBS-PID' or expType == 'PRBS-Compensador':
 		expTypeNumber = 2
 		tVzero.configure(state=DISABLED)
 		tVone.configure(state=DISABLED)
@@ -250,6 +273,19 @@ tKd=Entry(root,width=6)
 tKd.insert(0,str(0.01))
 tKd.place(x=124, y=192)
 tKd.configure(state=DISABLED)
+
+# Tc1
+Label(root, text='Tc1', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=12, y=216)
+tTc1=Entry(root,width=6)
+tTc1.insert(0,str(0.0))
+tTc1.place(x=48, y=216)
+tTc1.configure(state=DISABLED)
+# Tc2
+Label(root, text='Tc2', bg='#FFEFDB', font=('arial', 12, 'normal')).place(x=100, y=216)
+tTc2=Entry(root,width=6)
+tTc2.insert(0,str(0.01))
+tTc2.place(x=136, y=216)
+tTc2.configure(state=DISABLED)
 
 fig = Figure(figsize=(6.4, 4.8), dpi=100)
 ax = fig.add_subplot(111)

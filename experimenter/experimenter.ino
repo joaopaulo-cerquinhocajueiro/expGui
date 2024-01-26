@@ -72,7 +72,7 @@ double leadLagCompute(){
 
 #define SerialRate 115200
 #define Ta 20000
-float fTa = float(Ta);
+float fTa = float(Ta)*1e-6;
 
 #define pin_vout 5
 #define pin_vin A0
@@ -244,7 +244,7 @@ void loop() {
           ke = (Kp*(fT1 + fTa)/(fT2 + fTa));
           keAnt = (Kp*fT1/(fT2+fTa));
 
-              Serial.print("Kp, T1, T2:\t");
+              Serial.print("Kp, Tc1, Tc2:\t");
               Serial.print(Kp);
               Serial.print('\t');
               Serial.print(fT1);
