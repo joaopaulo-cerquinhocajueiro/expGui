@@ -137,6 +137,28 @@ class SerialPort:
         print(response)
         print("out of PID set")
 
+    def setLeadLag(self, Kp, Tc1, Tc2):
+        notCompleted = True
+        attempts = 3
+        llSetBuffer = b'L' + bytearray(struct.pack("f", Kp)) + bytearray(struct.pack("f", Tc1))+ bytearray(struct.pack("f", Tc2)) + int(55).to_bytes(1,'little')
+        print("Setting lead lag constants to {}, {} and {}".format(Kp, Tc1, Tc2))
+        print(llSetBuffer)
+        while notCompleted:
+            attempts -= 1
+            self.ser.write(llSetBuffer)
+            time.sleep(0.01)
+            response = self.getMeasure()
+            if isinstance(response,int):
+                notCompleted = True
+            else:
+                response = response.split(b'\t')
+                if(response[0] == "Kp, Tc1, Tc2:"):
+                    notCompleted = False
+            if attempts == 0:
+                notCompleted = False
+        print(response)
+        print("out of lead lag set")
+
     def run(self):
         runCommand = b'R7' # 'R' is the command to run the experiment, '7' (55) is the EoP
         self.ser.write(runCommand)

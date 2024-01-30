@@ -1,4 +1,3 @@
-#include <PID_v1.h>
 //#define SERVO_OUTPUT
 
 #ifdef SERVO_OUTPUT
@@ -9,13 +8,71 @@ Servo brushless;
 #endif
 
 // PID variables
+#define outMax 255.0
+#define outMin 0.0
 double Setpoint, Input, Output;
-double Kp=1, Ki=0.05, Kd=0.25;
-//Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+double Kp=1.0, Ki=0.05, Kd=0.25;
+double Integral = 0.0;
+double lastInput = 0.0;
+
+double PIDCompute(){
+  double error = Setpoint - Input;
+
+  double proportional = Kp * error;
+  
+  Integral += Ki*error;
+  if(Integral > outMax)
+    Integral = outMax;
+  else if(Integral < outMin)
+    Integral = outMin;
+
+  double derivativo = Kd*(Input - lastInput);
+
+  double PIDOut = proportional + Integral - derivativo;
+  if(PIDOut > outMax)
+    PIDOut = outMax;
+  else if(PIDOut < outMin)
+    PIDOut = outMin;
+
+  lastInput = Input;
+
+  return PIDOut;
+}
+
+///////// Lead Lag variables and computation ///////
+
+// Using implementation described in (Krikelis, Fassois, 1984)
+// y[n] = (T2/(T2 + Ta))*y[n-1] + (Kp*(T1 + Ta)/(T2 + Ta))*e[n] - (Kp*T1/(T2+Ta))*e[n-1]
+
+// Many variables already defined for PID
+// #define outMax 255.0
+// #define outMin 0.0
+// double Setpoint, Input, Output;
+//double Kp=1.0, Ki=0.05, Kd=0.25;
+double yAnt = 0.0; // y[n-1]
+double eAnt = 0.0; // e[n-1]
+double fT1;
+double fT2;
+double kyAnt; // (T2/(T2 + Ta))
+double ke;    // (Kp*(T1 + Ta)/(T2 + Ta))
+double keAnt; // (Kp*T1/(T2+Ta))
+
+double leadLagCompute(){
+  double error = Setpoint - Input;
+  double leadLag = kyAnt*yAnt + ke*error - keAnt*eAnt;
+  if(leadLag > outMax)
+    leadLag = outMax;
+  else if(leadLag < outMin)
+    leadLag = outMin;
+  yAnt = leadLag;
+  eAnt = error;
+  return leadLag;
+}
+
 
 #define SerialRate 115200
 #define Ta 20000
+float fTa = float(Ta)*1e-6;
 
 #define pin_vout 5
 #define pin_vin A0
@@ -53,20 +110,17 @@ void setup() {
   estado = parado;
   experiment = step;
   before = micros();
-  myPID.SetMode(MANUAL);
-  myPID.SetSampleTime(20);
   #ifdef SERVO_OUTPUT
   // brushless motor controlled by pin_vout through an ESC
   brushless.attach(pin_out);
   brushless.write(0); //initialize the signal to 1000
   #endif
   #ifndef SERVO_OUTPUT
-  pinMode(pin_out,OUTPUT);
+  pinMode(pin_vout,OUTPUT);
   #endif
 }
 
 void loop() {
-  myPID.Compute();
   // put your main code here, to run repeatedly:
   switch(estado){
   case parado:
@@ -125,27 +179,22 @@ void loop() {
           switch(input_buffer[1]){
             case 0:
             experiment = step;
-            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tStep response");
             break;
             case 1:
               experiment = prbs;
-            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tPRBS response");
             break;
             case 2:
             experiment = pid;
-            myPID.SetMode(AUTOMATIC);
             Serial.println("Experiment set to\tPID control");
             break;
             case 3:
               experiment = compensator;
-            myPID.SetMode(MANUAL);
             Serial.println("Experiment set to\tcompensator control");
             break;
             default:
             experiment = step;
-            myPID.SetMode(MANUAL);
           }
           break;
         case 'q': // Set the PID parameters
@@ -165,19 +214,48 @@ void loop() {
           bKd[1] = input_buffer[10];
           bKd[2] = input_buffer[11];
           bKd[3] = input_buffer[12];
-              Serial.print("Kp, Ki, Kd:\t");
+          Serial.print("Kp, Ki, Kd:\t");
+          Serial.print(Kp);
+          Serial.print('\t');
+          Serial.print(Ki);
+          Serial.print('\t');
+          Serial.println(Kd);
+          break;
+        case 'l': // Set the lead/lag parameters
+        case 'L':
+          byte * bKll = (byte *) &Kp;
+          bKll[0] = input_buffer[1];
+          bKll[1] = input_buffer[2];
+          bKll[2] = input_buffer[3];
+          bKll[3] = input_buffer[4];
+          byte * bT1 = (byte *) &fT1;
+          bT1[0] = input_buffer[5];
+          bT1[1] = input_buffer[6];
+          bT1[2] = input_buffer[7];
+          bT1[3] = input_buffer[8];
+          byte * bT2 = (byte *) &fT2;
+          bT2[0] = input_buffer[9];
+          bT2[1] = input_buffer[10];
+          bT2[2] = input_buffer[11];
+          bT2[3] = input_buffer[12];
+          // Adjust the leadLag specific constants
+          // float fTa = float(Ta);
+          kyAnt = (fT2/(fT2 + fTa));
+          ke = (Kp*(fT1 + fTa)/(fT2 + fTa));
+          keAnt = (Kp*fT1/(fT2+fTa));
+
+              Serial.print("Kp, Tc1, Tc2:\t");
               Serial.print(Kp);
               Serial.print('\t');
-              Serial.print(Ki);
+              Serial.print(fT1);
               Serial.print('\t');
-              Serial.println(Kd);
+              Serial.println(fT2);
           break;
         default: break;
       }
     }
     break;
   case rodando:
-    myPID.Compute();
     digitalWrite(13,1);
     now = micros();
     if((now-before)>=Ta){
@@ -211,22 +289,33 @@ void loop() {
           vin = analogRead(pin_vin);
           break;
         case pid:
+          vsp = analogRead(pin_sp);
+          Setpoint = (double)vsp;
+          vin = analogRead(pin_vin);
+          Input = (double)vin;
+          Output = PIDCompute();
+          vout = (int)Output;
+          #ifndef SERVO_OUTPUT
+          analogWrite(pin_vout,vout);
+          #endif
+          #ifdef SERVO_OUTPUT
+          brushless.write(map(vout,0,255,0,180));
+          #endif
+          break;
         case compensator:
-        vsp = analogRead(pin_sp);
-        Setpoint = (double)vsp;
-        vin = analogRead(pin_vin);
-        Input = (double)vin;
-        //myPID.Compute();
-        vout = (int)Output;
-//        vout = pid(vin,setPoint,Kp,Ki,Kd,vout,intVout);
-        #ifndef SERVO_OUTPUT
-        analogWrite(pin_vout,vout);
-        #endif
-        #ifdef SERVO_OUTPUT
-        brushless.write(map(vout,0,255,0,180));
-        #endif
-
-        break;
+          vsp = analogRead(pin_sp);
+          Setpoint = (double)vsp;
+          vin = analogRead(pin_vin);
+          Input = (double)vin;
+          Output = leadLagCompute();
+          vout = (int)Output;
+          #ifndef SERVO_OUTPUT
+          analogWrite(pin_vout,vout);
+          #endif
+          #ifdef SERVO_OUTPUT
+          brushless.write(map(vout,0,255,0,180));
+          #endif
+          break;
         default: break;
       }
       Serial.print('E');
@@ -258,3 +347,4 @@ void setExperiment(){
   estado = rodando;
   before = micros();
 }
+// AMDG
