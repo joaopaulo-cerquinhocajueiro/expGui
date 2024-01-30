@@ -28,7 +28,7 @@ double PIDCompute(){
 
   double derivativo = Kd*(Input - lastInput);
 
-  double PIDOut = proportional + Integral + derivativo;
+  double PIDOut = proportional + Integral - derivativo;
   if(PIDOut > outMax)
     PIDOut = outMax;
   else if(PIDOut < outMin)
