@@ -100,7 +100,7 @@ def runExperiment(_ard):
 	ard.setTimes(int(tTone.get()), int(tTtwo.get()))
 	if ((expTypeNumber==2)): # if is PID
 		# set the PID constants 
-		ard.setPID(float(tKp.get()),float(tKp.get()),float(tKd.get()))
+		ard.setPID(float(tKp.get()),float(tKi.get()),float(tKd.get()))
 	elif ((expTypeNumber==3)): # if is compensator:
 		ard.setLeadLag(float(tKp.get()),float(tTc1.get()),float(tTc2.get()))
 	else: # if isn't PID nor lead lag compensator
