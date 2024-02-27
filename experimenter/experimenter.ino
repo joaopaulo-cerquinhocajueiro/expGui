@@ -163,8 +163,8 @@ void loop() {
               Serial.print('\t');
               Serial.println(T1);
           break;
-        case 'p': // Set the time constants for the PRBS signal
-        case 'P':
+        case 'b': // Set the time constants for the PRBS signal
+        case 'B':
           // Tmin is the minimum length of a PRBS pulse
           Tmin = int(input_buffer[1]) * 256 + int(input_buffer[2]);
           // Tmax is the maximum length of a PRBS pulse
