@@ -103,9 +103,8 @@ def runExperiment(_ard):
 		ard.setPID(float(tKp.get()),float(tKp.get()),float(tKd.get()))
 	elif ((expTypeNumber==3)): # if is compensator:
 		ard.setLeadLag(float(tKp.get()),float(tTc1.get()),float(tTc2.get()))
-	else: # if isn't PID nor lead lag compensator
-		# then set the voltages
-		ard.setVoltages(int(tVzero.get()), int(tVone.get()), int(tVtwo.get()))
+	# in all cases set the voltages
+	ard.setVoltages(int(tVzero.get()), int(tVone.get()), int(tVtwo.get()))
 	# get one measurement for sanity - should return 0
 	ard.getMeasure()
 	# and run the experiment
@@ -161,7 +160,7 @@ def whenExpSelected(a):
 	elif expType == 'PID':
 		expTypeNumber = 2
 		tVzero.configure(state=DISABLED)
-		tVone.configure(state=DISABLED)
+		tVone.configure(state=NORMAL)
 		tVtwo.configure(state=DISABLED)
 		tTone.configure(state=DISABLED)
 		tTtwo.configure(state=NORMAL)
@@ -175,7 +174,7 @@ def whenExpSelected(a):
 	elif expType == 'Compensador':
 		expTypeNumber = 2
 		tVzero.configure(state=DISABLED)
-		tVone.configure(state=DISABLED)
+		tVone.configure(state=NORMAL)
 		tVtwo.configure(state=DISABLED)
 		tTone.configure(state=DISABLED)
 		tTtwo.configure(state=NORMAL)
