@@ -10,12 +10,13 @@ Servo brushless;
 // PID variables
 #define outMax 255.0
 #define outMin 0.0
-double Setpoint, Input, Output;
+double Setpoint, Input, Output, Offset;
 double Kp=1.0, Ki=0.05, Kd=0.25;
 double Integral = 0.0;
 double lastInput = 0.0;
 
 double PIDCompute(){
+
   double error = Setpoint - Input;
 
   double proportional = Kp * error;
@@ -28,7 +29,7 @@ double PIDCompute(){
 
   double derivativo = Kd*(Input - lastInput);
 
-  double PIDOut = proportional + Integral - derivativo;
+  double PIDOut = proportional + Integral - derivativo + Offset;
   if(PIDOut > outMax)
     PIDOut = outMax;
   else if(PIDOut < outMin)
@@ -59,7 +60,7 @@ double keAnt; // (Kp*T1/(T2+Ta))
 
 double leadLagCompute(){
   double error = Setpoint - Input;
-  double leadLag = kyAnt*yAnt + ke*error - keAnt*eAnt;
+  double leadLag = kyAnt*yAnt + ke*error - keAnt*eAnt + Offset;
   if(leadLag > outMax)
     leadLag = outMax;
   else if(leadLag < outMin)
@@ -141,6 +142,7 @@ void loop() {
           // V0 is the output value that the experiment starts
           V0 = int(input_buffer[1]) * 256 + int(input_buffer[2]);
           // V1 is the step value for the step or one of the values for the PRBS
+          // It also serves as the offset of the PID experiment
           V1 = int(input_buffer[3]) * 256 + int(input_buffer[4]);
           // V2 is the other value for the PRBS
           V2  = int(input_buffer[5]) * 256 + int(input_buffer[6]);
@@ -293,6 +295,7 @@ void loop() {
           Setpoint = (double)vsp;
           vin = analogRead(pin_vin);
           Input = (double)vin;
+          Offset = (double)V1;
           Output = PIDCompute();
           vout = (int)Output;
           #ifndef SERVO_OUTPUT
@@ -307,6 +310,7 @@ void loop() {
           Setpoint = (double)vsp;
           vin = analogRead(pin_vin);
           Input = (double)vin;
+          Offset = (double)V1;
           Output = leadLagCompute();
           vout = (int)Output;
           #ifndef SERVO_OUTPUT
