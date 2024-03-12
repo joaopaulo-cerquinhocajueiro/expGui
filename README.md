@@ -63,13 +63,13 @@ Note que o termo derivativo é sobre vin e não sobre o erro, para evitar respos
 
 ### Compensador avanço-atraso
 O compensador avanço atraso é implementa a função de transferência
-$$
+```math
 y = Kp\cdot \frac{T_1s+1}{T_2s+1}\cdot \text{erro} 
-$$
+```
 Esta função é implementada em tempo discreto conforme (Krikelis, Fassois, 1984):
-$$
+```math
 y[n] = \frac{T_2}{T_2 + Ta}\cdot y[n-1] + Kp\cdot\frac{T_1 + T_a}{T_2 + T_a}\cdot\text{erro}[n] - Kp\frac{T_1}{T_2+T_a}\cdot\text{erro}[n-1] 
-$$
+```
 
 ### Pacotes
 A comunicação é do tipo mestre-escravo: o arduino só responde a um comando do computador
