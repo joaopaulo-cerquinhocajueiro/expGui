@@ -55,15 +55,21 @@ flowchart LR;
 	s --> vin;
 ```
 Neste diagrama, o bloco PID implementa a seguinte operação:
-$$ vout = Kp \cdot vin + Kd \cdot \frac{d vin}{dt} + Ki \int_0^t{erro\cdot dt} $$
+$$
+vout = Kp \cdot vin + Kd \cdot \frac{d vin}{dt} + Ki \int_0^t{erro\cdot dt}
+$$
 
 Note que o termo derivativo é sobre vin e não sobre o erro, para evitar respostas por mudança de setpoint. Além disso, tanto o termo integral quanto a saída total são limitados à faixa de 0 a 255, que é a faixa permitida do sinal vout.
 
 ### Compensador avanço-atraso
 O compensador avanço atraso é implementa a função de transferência
-$$ y = Kp\cdot \frac{T_1s+1}{T_2s+1}\cdot \text{erro} $$
+$$
+y = Kp\cdot \frac{T_1s+1}{T_2s+1}\cdot \text{erro} 
+$$
 Esta função é implementada em tempo discreto conforme (Krikelis, Fassois, 1984):
-$$ y[n] = \frac{T_2}{T_2 + Ta}\cdot y[n-1] + Kp\cdot\frac{T_1 + T_a}{T_2 + T_a}\cdot\text{erro}[n] - Kp\frac{T_1}{T_2+T_a}\cdot\text{erro}[n-1] $$
+$$
+y[n] = \frac{T_2}{T_2 + Ta}\cdot y[n-1] + Kp\cdot\frac{T_1 + T_a}{T_2 + T_a}\cdot\text{erro}[n] - Kp\frac{T_1}{T_2+T_a}\cdot\text{erro}[n-1] 
+$$
 
 ### Pacotes
 A comunicação é do tipo mestre-escravo: o arduino só responde a um comando do computador
